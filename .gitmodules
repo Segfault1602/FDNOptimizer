@@ -1,0 +1,6 @@
+[submodule "externals/audio_utils"]
+	path = externals/audio_utils
+	url = https://github.com/Segfault1602/audio_utils.git
+[submodule "externals/sfFDN"]
+	path = externals/sfFDN
+	url = https://github.com/Segfault1602/sfFDN.git

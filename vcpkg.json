@@ -1,0 +1,12 @@
+{
+  "dependencies": [
+    "armadillo",
+    "eigen3",
+    "kissfft",
+    "libsamplerate",
+    "libsndfile",
+    "nanobench",
+    "pffft",
+    "nlohmann-json"
+  ]
+}

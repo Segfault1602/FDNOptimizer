@@ -1,0 +1,44 @@
+{
+    "version": 10,
+    "cmakeMinimumRequired": {
+        "major": 4,
+        "minor": 1,
+        "patch": 1
+    },
+    "configurePresets": [
+        {
+            "name": "common-ninja",
+            "hidden": true,
+            "displayName": "Common-Ninja",
+            "generator": "Ninja Multi-Config",
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_POLICY_VERSION_MINIMUM": "3.5"
+            }
+        },
+        {
+            "name": "llvm-ninja",
+            "displayName": "LLVM - Ninja",
+            "description": "Build for LLVM",
+            "inherits": "common-ninja",
+            "toolchainFile": "${sourceDir}/cmake/llvm-toolchain.cmake"
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "llvm-debug",
+            "configurePreset": "llvm-ninja",
+            "configuration": "Debug"
+        },
+        {
+            "name": "llvm-release",
+            "configurePreset": "llvm-ninja",
+            "configuration": "Release"
+        },
+        {
+            "name": "llvm-relwithdebinfo",
+            "configurePreset": "llvm-ninja",
+            "configuration": "RelWithDebInfo"
+        }
+    ]
+}
