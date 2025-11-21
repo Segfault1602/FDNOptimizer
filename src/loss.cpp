@@ -3,6 +3,9 @@
 #include <audio_utils/audio_analysis.h>
 #include <audio_utils/fft.h>
 
+#include "echo_density.h"
+#include "utils.h"
+
 namespace loss
 {
 float SpectralFlatnessLoss(std::span<const float> signal, audio_utils::FFT& fft)
@@ -18,13 +21,19 @@ float SpectralFlatnessLoss(std::span<const float> signal, audio_utils::FFT& fft)
 
 float RMSLoss(std::span<const float> signal, float target_rms)
 {
-    float sum_squares = 0.0f;
-    for (const auto& sample : signal)
-    {
-        sum_squares += sample * sample;
-    }
-
-    float rms = std::sqrt(sum_squares / static_cast<float>(signal.size()));
+    float rms = utils::RMS(signal);
     return std::abs(rms - target_rms);
 }
+
+float MixingTimeLoss(std::span<const float> signal, uint32_t sample_rate, float target_mixing_time)
+{
+    constexpr float kWindowSizeMs = 50.0f;
+    constexpr float kHopSizeMs = 10.0f;
+    const uint32_t window_size = static_cast<uint32_t>((kWindowSizeMs / 1000.0f) * static_cast<float>(sample_rate));
+    const uint32_t hop_size = static_cast<uint32_t>((kHopSizeMs / 1000.0f) * static_cast<float>(sample_rate));
+    auto results = EchoDensity(signal, window_size, sample_rate, hop_size);
+
+    return std::abs(results.mixing_time - target_mixing_time);
+}
+
 } // namespace loss

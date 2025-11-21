@@ -9,15 +9,22 @@
 
 namespace utils
 {
-
 void PrintParams(const arma::mat& params, uint32_t fdn_order);
 
-void SetupFDNFromParameters(const arma::mat& params, sfFDN::FDN& fdn);
+sfFDN::FDNConfig ParametersToFDNConfig(const arma::mat& params, uint32_t fdn_order);
 
-std::vector<float> GenerateIR(sfFDN::FDN& fdn, uint32_t ir_size);
+float RMS(std::span<const float> signal);
 
-float EvaluateWithSpectralFlatness(const arma::mat& params, uint32_t fdn_order, uint32_t ir_size);
+template <typename T>
+T Db2Mag(T db)
+{
+    return std::pow(static_cast<T>(10), db / static_cast<T>(20));
+}
 
-arma::mat EvaluateWithSpectralFlatness_Gradient(const arma::mat& params, uint32_t fdn_order, uint32_t ir_size);
+template <typename T>
+T RT602Slope(T t60, uint16_t sr)
+{
+    return static_cast<T>(-60) / (t60 * static_cast<T>(sr));
+}
 
 } // namespace utils

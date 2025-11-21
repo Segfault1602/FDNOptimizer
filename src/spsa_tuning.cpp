@@ -17,7 +17,8 @@ using namespace std::chrono_literals;
 constexpr uint32_t kIrSize = 1 << 15;
 constexpr uint32_t kFdnOrder = 8;
 
-constexpr std::chrono::seconds kOptimizationDuration = 600s;
+constexpr std::chrono::seconds kOptimizationDuration = 10s;
+constexpr std::array kParamTypes = {ParamType::Gains};
 
 std::mutex io_mutex;
 
@@ -25,17 +26,7 @@ struct ParameterTuner
 {
     void Loop()
     {
-        const uint32_t fft_size = audio_utils::FFT::NextSupportedFFTSize(kIrSize);
-        audio_utils::FFT fft(fft_size);
-
-        auto loss_function = [&fft](std::span<const float> signal) -> float {
-            return loss::SpectralFlatnessLoss(signal, fft) +
-                   0.01 * loss::RMSLoss(signal.subspan(signal.size() - 1024), 0.1f);
-        };
-
-        FDNModel model(kFdnOrder, kIrSize, loss_function);
-        constexpr std::array<uint32_t, kFdnOrder> kDelays = {2712, 2981, 1580, 1023, 2992, 1371, 1161, 1578};
-        model.SetDelays(kDelays);
+        FDNModel_InputOutputGain model(kFdnOrder, kIrSize, kParamTypes);
 
         arma::mat params = starting_params;
         double initial_loss = model.Evaluate(params);
@@ -53,8 +44,8 @@ struct ParameterTuner
         {
             arma::mat hyper_params = arma::mat(1, 4, arma::fill::randu);
 
-            hyper_params(0, 2) *= 2.0; // step size [0,2]
-            hyper_params(0, 3) *= 2.0; // eval step size [0,2]
+            // hyper_params(0, 2) *= 2.0; // step size [0,2]
+            // hyper_params(0, 3) *= 2.0; // eval step size [0,2]
 
             ens::SPSA optimizer(
                 /* alpha */ hyper_params(0, 0),
@@ -106,8 +97,10 @@ struct ParameterTuner
 
 int main()
 {
+    FDNModel_InputOutputGain dummy_model(kFdnOrder, 0, kParamTypes);
+
     arma::arma_rng::set_seed_random();
-    arma::mat starting_params(1, kFdnOrder * 2, arma::fill::randn);
+    arma::mat starting_params = dummy_model.GetInitialParams();
 
     std::cout << "Starting optimization for " << kOptimizationDuration.count() << " seconds..." << std::endl;
     const auto kNumThreads = std::thread::hardware_concurrency();

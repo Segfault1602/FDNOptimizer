@@ -31,5 +31,7 @@ set(USE_BANDICOOT OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(ensmallen)
 
 find_package(nanobench CONFIG REQUIRED)
+find_package(nlohmann_json CONFIG REQUIRED)
+find_package(Eigen3 CONFIG REQUIRED)
 
 add_subdirectory(src)

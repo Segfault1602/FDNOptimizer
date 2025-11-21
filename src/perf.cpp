@@ -45,31 +45,4 @@ int main()
     std::cout << "Params: " << params << std::endl;
 
     float flatness = 0.0f;
-
-    nanobench::Bench bench;
-    bench.title("Spectral Flatness loss function");
-    bench.timeUnit(1ms, "ms");
-    bench.minEpochIterations(500);
-
-    bench.run("FDN Spectral Flatness Evaluation", [&]() {
-        flatness = utils::EvaluateWithSpectralFlatness(params, kFdnOrder, kIrSize);
-        nanobench::doNotOptimizeAway(flatness);
-    });
-
-    std::cout << "Spectral Flatness of generated IR: " << flatness << std::endl;
-
-    nanobench::Bench grad_bench;
-    grad_bench.title("Spectral Flatness Gradient");
-    grad_bench.timeUnit(1ms, "ms");
-    grad_bench.minEpochIterations(50);
-
-    arma::mat gradient;
-    grad_bench.run("FDN Spectral Flatness Gradient Evaluation", [&]() {
-        gradient = utils::EvaluateWithSpectralFlatness_Gradient(params, kFdnOrder, kIrSize);
-        nanobench::doNotOptimizeAway(gradient);
-    });
-
-    std::cout << "Spectral Flatness Gradient of generated IR: " << gradient << std::endl;
-
-    // audio_utils::audio_file::WriteWavFile("fdn_ir.wav", output_buffer, kSampleRate);
 }

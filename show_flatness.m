@@ -8,7 +8,7 @@ xlabel('Sample Index');
 ylabel('Amplitude');
 title('Impulse Response');
 
-WIN_LEN = 2^13;
+WIN_LEN = 2^15;
 OVL_LEN = round(0.1*WIN_LEN);
 UPPER_FREQ = 20000;
 
@@ -33,4 +33,5 @@ hold on;
 spectralFlatness(ir, fs, Window=rectwin(WIN_LEN), OverlapLength=OVL_LEN, ...
               Range=[0,fs/2]);
 hold off;
-
+ylim([0 1]);
+legend("Optimized", "Original");

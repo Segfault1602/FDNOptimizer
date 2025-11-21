@@ -1,65 +1,32 @@
 find_package(OpenMP REQUIRED)
 
-add_executable(
-    main
+add_library(
+    fdn_optimizer STATIC
+    echo_density.cpp
     loss.cpp
-    main.cpp
     model.cpp
     utils.cpp
-)
-target_link_libraries(
-    main
-    PRIVATE Armadillo::Armadillo
-            ensmallen
-            audio_utils::audio_utils
-            sfFDN::sfFDN
-            OpenMP::OpenMP_CXX
 )
 
-add_executable(
-    perf
-    loss.cpp
-    main.cpp
-    model.cpp
-    utils.cpp
-)
 target_link_libraries(
-    perf
-    PRIVATE Armadillo::Armadillo
-            ensmallen
-            audio_utils::audio_utils
-            sfFDN::sfFDN
-            nanobench::nanobench
-            OpenMP::OpenMP_CXX
+    fdn_optimizer
+    PUBLIC Armadillo::Armadillo
+           ensmallen
+           audio_utils::audio_utils
+           sfFDN::sfFDN
+           OpenMP::OpenMP_CXX
+           nlohmann_json::nlohmann_json
+           Eigen3::Eigen
 )
 
-add_executable(
-    rng_search
-    loss.cpp
-    model.cpp
-    random_search.cpp
-    utils.cpp
-)
-target_link_libraries(
-    rng_search
-    PRIVATE Armadillo::Armadillo
-            audio_utils::audio_utils
-            sfFDN::sfFDN
-            OpenMP::OpenMP_CXX
-)
+add_executable(main main.cpp)
+target_link_libraries(main PRIVATE fdn_optimizer)
 
-add_executable(
-    spsa_tuning
-    loss.cpp
-    model.cpp
-    spsa_tuning.cpp
-    utils.cpp
-)
-target_link_libraries(
-    spsa_tuning
-    PRIVATE Armadillo::Armadillo
-            ensmallen
-            audio_utils::audio_utils
-            sfFDN::sfFDN
-            OpenMP::OpenMP_CXX
-)
+add_executable(perf main.cpp)
+target_link_libraries(perf PRIVATE fdn_optimizer)
+
+add_executable(rng_search random_search.cpp)
+target_link_libraries(rng_search PRIVATE fdn_optimizer)
+
+add_executable(spsa_tuning spsa_tuning.cpp)
+target_link_libraries(spsa_tuning PRIVATE fdn_optimizer)

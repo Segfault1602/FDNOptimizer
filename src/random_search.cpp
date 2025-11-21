@@ -13,31 +13,26 @@ using namespace std::chrono_literals;
 constexpr uint32_t kSampleRate = 48000;
 constexpr uint32_t kIrSize = 1 << 15;
 constexpr uint32_t kFdnOrder = 8;
-constexpr uint32_t kParamCount = kFdnOrder * 3;
+constexpr uint32_t kRMSSampleCount = 1024;
 
 constexpr std::chrono::seconds kOptimizationDuration = 10s;
+constexpr std::array kParamTypes = {ParamType::Gains};
 
 void RandomSearch(arma::mat& params, size_t& eval_count, double& best_loss);
 
 int main()
 {
-    arma::arma_rng::set_seed_random();
-    arma::mat params(1, kParamCount, arma::fill::randn);
-
-    // params /= arma::norm(params);
-
-    std::cout << "Params: " << params << std::endl;
-    utils::PrintParams(params, kFdnOrder);
 
     const uint32_t fft_size = audio_utils::FFT::NextSupportedFFTSize(kIrSize);
     audio_utils::FFT fft(fft_size);
 
-    auto loss_function = [&fft](std::span<const float> signal) -> float {
-        return loss::SpectralFlatnessLoss(signal, fft) +
-               0.01 * loss::RMSLoss(signal.subspan(signal.size() - 1024), 0.1f);
-    };
+    FDNModel_InputOutputGain model(kFdnOrder, kIrSize, kParamTypes);
 
-    FDNModel model(kFdnOrder, kIrSize, loss_function);
+    arma::arma_rng::set_seed_random();
+    arma::mat params = model.GetInitialParams();
+
+    std::cout << "Params: " << params << std::endl;
+    model.PrintFDNConfig(params);
 
     auto initial_loss = model.Evaluate(params);
     std::cout << "Initial Loss: " << initial_loss << std::endl;
@@ -45,9 +40,7 @@ int main()
     audio_utils::audio_file::WriteWavFile("initial_ir.wav", initial_ir, kSampleRate);
 
     auto initial_flatness = loss::SpectralFlatnessLoss(initial_ir, fft);
-    auto initial_rms = loss::RMSLoss(initial_ir.subspan(initial_ir.size() - 1024), 0.1f);
-
-    auto start_time = std::chrono::steady_clock::now();
+    auto initial_rms = utils::RMS(initial_ir.subspan(initial_ir.size() - kRMSSampleCount));
 
     arma::mat best_params = params;
     double best_loss = initial_loss;
@@ -93,14 +86,14 @@ int main()
     std::cout << std::endl;
     std::cout << "Optimized Params: " << best_params << std::endl;
     std::cout << "Best Loss: " << best_loss << std::endl;
-    utils::PrintParams(best_params, kFdnOrder);
+    model.PrintFDNConfig(best_params);
 
     model.Evaluate(best_params);
     auto final_ir = model.GetImpulseResponse();
     audio_utils::audio_file::WriteWavFile("final_ir.wav", final_ir, kSampleRate);
 
     auto final_flatness = loss::SpectralFlatnessLoss(final_ir, fft);
-    auto final_rms = loss::RMSLoss(final_ir.subspan(final_ir.size() - 1024), 0.1f);
+    auto final_rms = utils::RMS(final_ir.subspan(final_ir.size() - kRMSSampleCount));
 
     std::cout << "Spectral Flatness went from " << 1.0f - initial_flatness << " to " << 1.0f - final_flatness
               << std::endl;
@@ -112,22 +105,15 @@ void RandomSearch(arma::mat& params, size_t& eval_count, double& best_loss)
     const uint32_t fft_size = audio_utils::FFT::NextSupportedFFTSize(kIrSize);
     audio_utils::FFT fft(fft_size);
 
-    auto loss_function = [&fft](std::span<const float> signal) -> float {
-        return loss::SpectralFlatnessLoss(signal, fft) +
-               0.01 * loss::RMSLoss(signal.subspan(signal.size() - 1024), 0.1f);
-    };
+    FDNModel_InputOutputGain model(kFdnOrder, kIrSize, kParamTypes);
 
-    FDNModel model(kFdnOrder, kIrSize, loss_function);
-
-    auto initial_loss = model.Evaluate(params);
     auto start_time = std::chrono::steady_clock::now();
 
     arma::mat best_params = params;
 
     while (start_time + kOptimizationDuration > std::chrono::steady_clock::now())
     {
-        params = arma::mat(1, kParamCount, arma::fill::randn);
-        // params = arma::mat(1, kFdnOrder * 2, arma::fill::randu) * 2.0 - 1.0;
+        params = arma::mat(1, model.GetParamCount(), arma::fill::randn);
 
         auto loss = model.Evaluate(params);
         if (loss < best_loss)
